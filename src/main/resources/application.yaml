@@ -1,0 +1,45 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: ms-recomendaciones
+
+  datasource:
+    url: jdbc:mysql://db-recomendaciones:3306/recomendaciones_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&useUnicode=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/e5372bf0-c5e3-4286-887c-79069f209c1f/v2.0
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: recomendaciones-group
+      auto-offset-reset: earliest      # un grupo nuevo lee el tópico desde el principio
+      enable-auto-commit: false        # el contenedor confirma el offset DESPUÉS de procesar
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+devgear:
+  kafka:
+    topic-navegacion: navegacion.eventos
+    concurrency: 3                      # 1 hilo por partición (el tópico tiene 3)
+  productos:
+    base-url: ${PRODUCTOS_API_BASE_URL:http://app-productos:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics

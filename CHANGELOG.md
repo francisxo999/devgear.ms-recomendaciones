@@ -1,0 +1,1 @@
+* v1.0.0: Inicialización del microservicio de recomendaciones: consumidor Kafka (grupo recomendaciones-group, 3 hilos) del tópico navegacion.eventos, persistencia idempotente por eventId, endpoints de recomendaciones por categoría y de métricas.
