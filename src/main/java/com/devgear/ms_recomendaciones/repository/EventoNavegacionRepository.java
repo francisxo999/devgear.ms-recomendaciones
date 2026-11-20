@@ -14,24 +14,34 @@ public interface EventoNavegacionRepository extends JpaRepository<EventoNavegaci
     // Afinidad del usuario por categoría: ver = 1 punto, agregar al carrito = 3 puntos.
     // Devuelve filas [categoria, puntaje] ordenadas de mayor a menor.
     @Query("""
-            select e.categoria, sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 else 0 end)
+            select e.categoria, sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 when 'FAVORITO_AGREGADO' then 2 else 0 end)
             from EventoNavegacion e
             where e.usuarioId = :usuarioId and e.categoria is not null
             group by e.categoria
-            having sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 else 0 end) > 0
-            order by sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 else 0 end) desc
+            having sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 when 'FAVORITO_AGREGADO' then 2 else 0 end) > 0
+            order by sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 when 'FAVORITO_AGREGADO' then 2 else 0 end) desc
             """)
     List<Object[]> afinidadPorCategoria(@Param("usuarioId") String usuarioId, Pageable pageable);
 
     // Popularidad global por producto: filas [productoId, puntaje].
     @Query("""
-            select e.productoId, sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 else 0 end)
+            select e.productoId, sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 when 'FAVORITO_AGREGADO' then 2 else 0 end)
             from EventoNavegacion e
             where e.productoId is not null
             group by e.productoId
-            order by sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 else 0 end) desc
+            order by sum(case e.tipo when 'PRODUCTO_VISTO' then 1 when 'ITEM_AGREGADO' then 3 when 'FAVORITO_AGREGADO' then 2 else 0 end) desc
             """)
     List<Object[]> popularidadProductos(Pageable pageable);
+
+    // Tendencia: productos con más interacciones desde una fecha. Filas [productoId, cantidad].
+    @Query("""
+            select e.productoId, count(e)
+            from EventoNavegacion e
+            where e.productoId is not null and e.procesadoEn >= :desde
+            group by e.productoId
+            order by count(e) desc
+            """)
+    List<Object[]> interaccionesDesde(@Param("desde") Instant desde, Pageable pageable);
 
     // Métricas
     @Query("select e.tipo, count(e) from EventoNavegacion e group by e.tipo")

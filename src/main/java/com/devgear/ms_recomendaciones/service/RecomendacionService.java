@@ -15,6 +15,8 @@ public class RecomendacionService {
 
     private static final int MAX_RECOMENDACIONES = 6;
     private static final int MAX_CATEGORIAS = 3;
+    private static final int MAX_TENDENCIA = 6;
+    private static final long VENTANA_TENDENCIA_SEGUNDOS = 30 * 60;
 
     private final EventoNavegacionRepository repository;
     private final ProductoClient productoClient;
@@ -56,6 +58,33 @@ public class RecomendacionService {
         }
         List<RecomendacionDTO> top = resultado.stream().limit(MAX_RECOMENDACIONES).toList();
         return new RecomendacionesResponseDTO(favoritas, top);
+    }
+
+    // Productos con más interacciones (vistas, carrito, favoritos) en los últimos 30 minutos.
+    // Si en ese lapso no hubo actividad, se muestra el histórico completo.
+    public TendenciaDTO tendencia(String bearerToken) {
+        boolean reciente = true;
+        List<Object[]> filas = repository.interaccionesDesde(
+                Instant.now().minusSeconds(VENTANA_TENDENCIA_SEGUNDOS), PageRequest.of(0, 20));
+        if (filas.isEmpty()) {
+            reciente = false;
+            filas = repository.interaccionesDesde(Instant.now().minusSeconds(10L * 365 * 24 * 3600), PageRequest.of(0, 20));
+        }
+        Map<Long, ProductoDTO> disponibles = new HashMap<>();
+        for (ProductoDTO p : productoClient.listar(bearerToken)) {
+            if (!Boolean.FALSE.equals(p.activo()) && p.stock() != null && p.stock() > 0) {
+                disponibles.putIfAbsent(p.id(), p);
+            }
+        }
+        List<TendenciaItemDTO> items = new ArrayList<>();
+        for (Object[] fila : filas) {
+            ProductoDTO p = disponibles.get((Long) fila[0]);
+            if (p != null && items.size() < MAX_TENDENCIA) {
+                items.add(new TendenciaItemDTO(p.id(), p.nombre(), p.categoria(), p.precio(), p.imagenUrl(),
+                        ((Number) fila[1]).longValue()));
+            }
+        }
+        return new TendenciaDTO(reciente ? "Últimos 30 minutos" : "Histórico", items);
     }
 
     public MetricasDTO metricas() {

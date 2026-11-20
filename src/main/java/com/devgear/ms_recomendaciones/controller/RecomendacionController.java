@@ -2,6 +2,7 @@ package com.devgear.ms_recomendaciones.controller;
 
 import com.devgear.ms_recomendaciones.dto.MetricasDTO;
 import com.devgear.ms_recomendaciones.dto.RecomendacionesResponseDTO;
+import com.devgear.ms_recomendaciones.dto.TendenciaDTO;
 import com.devgear.ms_recomendaciones.service.RecomendacionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +27,12 @@ public class RecomendacionController {
         String usuarioId = auth.getToken().getClaimAsString("oid");
         String bearer = "Bearer " + auth.getToken().getTokenValue();
         return ResponseEntity.ok(service.recomendar(usuarioId, bearer));
+    }
+
+    // Lo más visto y agregado por todos los clientes (cualquier usuario autenticado).
+    @GetMapping("/tendencia")
+    public ResponseEntity<TendenciaDTO> tendencia(JwtAuthenticationToken auth) {
+        return ResponseEntity.ok(service.tendencia("Bearer " + auth.getToken().getTokenValue()));
     }
 
     // Métricas del flujo de eventos para el dashboard del administrador.
